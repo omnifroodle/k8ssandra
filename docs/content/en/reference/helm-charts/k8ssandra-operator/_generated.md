@@ -1,6 +1,6 @@
 
 
-![Version: 0.30.1](https://img.shields.io/badge/Version-0.30.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
+![Version: 0.31.1](https://img.shields.io/badge/Version-0.31.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
 
 ## Maintainers
 
@@ -17,6 +17,7 @@
 
 | Repository | Name | Version |
 |------------|------|---------|
+| file://../cass-operator | cass-operator | 0.31.1 |
 | file://../k8ssandra-common | k8ssandra-common | 0.28.4 |
 
 ## Values

@@ -17,9 +17,8 @@
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://../cass-operator | cass-operator | 0.30.0 |
+| file://../cass-operator | cass-operator | 0.31.1 |
 | file://../k8ssandra-common | k8ssandra-common | 0.28.4 |
-| file://../k8ssandra-operator | k8ssandra-operator | 0.30.1 |
 | file://../medusa-operator | medusa-operator | 0.30.1 |
 | file://../reaper-operator | reaper-operator | 0.32.1 |
 | https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 12.11.3 |
@@ -86,7 +85,7 @@
 | cassandra.ingress.host | string | `nil` | Optional hostname used to match requests. Warning: many native Cassandra clients, notably including cqlsh, initialize their connection by querying for the cluster's contactPoints, and thereafter communicate to the cluster using those names/IPs rather than whatever host was specified to the client. In order for clients to work correctly through ingress with a host filter, this means that the host filter must match the hostnames specified in the contactPoints. This value must be a DNS-resolvable hostname and not an IP address. To avoid this issue, leave this setting blank. |
 | cassandra.ingress.traefik.entrypoint | string | `"cassandra"` | Traefik entrypoint where traffic is sourced. See https://doc.traefik.io/traefik/routing/entrypoints/ |
 | stargate.enabled | bool | `true` | Enable Stargate resources as part of this release |
-| stargate.version | string | `"1.0.29"` | version of Stargate to deploy. This is used in conjunction with cassandra.version to select the Stargate container image. If stargate.image is set, this value has no effect. |
+| stargate.version | string | `"1.0.35"` | version of Stargate to deploy. This is used in conjunction with cassandra.version to select the Stargate container image. If stargate.image is set, this value has no effect. |
 | stargate.image | object | `{}` | Sets the Stargate container image. This value must be compatible with the value provided for stargate.clusterVersion. If left blank (recommended), k8ssandra will derive an appropriate image based on cassandra.clusterVersion. |
 | stargate.replicas | int | `1` | Number of Stargate instances to deploy. This value may be scaled independently of Cassandra cluster nodes. Each instance handles API and coordination tasks for inbound queries. |
 | stargate.waitForCassandra | object | `{"image":{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"alpine","tag":"3.12.2"}}` | The wait-for-cassandra init container in the Stargate Deployment |
@@ -165,7 +164,6 @@
 | client.image.repository | string | `"k8ssandra/k8ssandra-tools"` | Image repository for the client |
 | client.image.tag | string | `"latest"` | Tag of the client image to pull from |
 | client.image.pullPolicy | string | `"IfNotPresent"` | Pull policy for the client container |
-| k8ssandra-operator.enabled | bool | `false` | Enables the k8ssandra-operator as part of this release. This is experimental deployment option, do not use in production. |
 | cass-operator.enabled | bool | `true` | Enables the cass-operator as part of this release. If this setting is disabled no Cassandra resources will be deployed. |
 | reaper-operator.enabled | bool | `true` | Enables the reaper-operator as part of this release. If this setting is disabled no repair resources will be deployed. |
 | kube-prometheus-stack.enabled | bool | `true` | Controls whether the kube-prometheus-stack chart is used at all. Disabling this parameter prevents all monitoring components from being installed. |
