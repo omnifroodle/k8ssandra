@@ -24,7 +24,7 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | file://../cass-operator | cass-operator | 0.31.1 |
 | file://../k8ssandra-common | k8ssandra-common | 0.28.4 |
 | file://../medusa-operator | medusa-operator | 0.30.1 |
-| file://../reaper-operator | reaper-operator | 0.32.2|
+| file://../reaper-operator | reaper-operator | 0.32.2 |
 | https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 12.11.3 |
 
 ## Values
@@ -33,20 +33,20 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 |-----|------|---------|-------------|
 | cassandra.enabled | bool | `true` | Enables installation of Cassandra cluster. Set to false if you only wish to install operators. |
 | cassandra.version | string | `"4.0.1"` | The Cassandra version to use. The supported versions include the following:    - 3.11.7    - 3.11.8    - 3.11.9    - 3.11.10    - 3.11.11    - 4.0.0    - 4.0.1 |
-| cassandra.versionImageMap | object | `{"3.11.10":"k8ssandra/cass-management-api:3.11.10-v0.1.27","3.11.11":"k8ssandra/cass-management-api:3.11.11-v0.1.30","3.11.7":"k8ssandra/cass-management-api:3.11.7-v0.1.30","3.11.8":"k8ssandra/cass-management-api:3.11.8-v0.1.30","3.11.9":"k8ssandra/cass-management-api:3.11.9-v0.1.27","4.0.0":"k8ssandra/cass-management-api:4.0.0-v0.1.30","4.0.1":"k8ssandra/cass-management-api:4.0.1-v0.1.30"}` | Specifies the image to use for a particular Cassandra version. Exercise care and caution with changing these values! cass-operator is not designed to work with arbitrary Cassandra images. It expects the cassandra container to be running management-api images. If you do want to change one of these mappings, the new value should be a management-api image. |
+| cassandra.versionImageMap | object | `{"3.11.10":"k8ssandra/cass-management-api:3.11.10-v0.1.27","3.11.11":"k8ssandra/cass-management-api:3.11.11-v0.1.32","3.11.7":"k8ssandra/cass-management-api:3.11.7-v0.1.32","3.11.8":"k8ssandra/cass-management-api:3.11.8-v0.1.32","3.11.9":"k8ssandra/cass-management-api:3.11.9-v0.1.27","4.0.0":"k8ssandra/cass-management-api:4.0.0-v0.1.32","4.0.1":"k8ssandra/cass-management-api:4.0.1-v0.1.32"}` | Specifies the image to use for a particular Cassandra version. Exercise care and caution with changing these values! cass-operator is not designed to work with arbitrary Cassandra images. It expects the cassandra container to be running management-api images. If you do want to change one of these mappings, the new value should be a management-api image. |
 | cassandra.image | object | `{}` | Overrides the default image mappings. This is intended for advanced use cases like development or testing. By default the Cassandra version has to be one that is in versionImageMap. Template rendering will fail if the version is not in the map. When you set the image directly, the version mapping check is skipped. Note that you are still constrained to the versions supported by cass-operator. |
-| cassandra.securityContext | object | `{}` | Security context override for Cassandra container.
-| cassandra.podSecurityContext | object | `{}` | Security context override for Cassandra pod |
-| cassandra.baseConfig | object | `{}` | Cassandra base init container |
-| cassandra.baseConfig.securityContext | object | `{}` | Security context override for base init container. |
+| cassandra.securityContext | object | `{}` | Security context override for cassandra container |
+| cassandra.podSecurityContext | object | `{}` | Security context override for pod where Cassandra container resides |
+| cassandra.baseConfig | object | `{"securityContext":{}}` | Cassandra base init container |
+| cassandra.baseConfig.securityContext | object | `{}` | Security context override for base init container |
 | cassandra.configBuilder | object | `{"image":{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"datastax/cass-config-builder","tag":"1.0.4"},"securityContext":{}}` | The server-config-init init container |
-| cassandra.configBuilder.securityContext | object | `{}` | Security context override for server-config-init container. |
+| cassandra.configBuilder.securityContext | object | `{}` | Security context override for server-config-init container |
 | cassandra.configBuilder.image.registry | string | `"docker.io"` | Container registry for the config builder |
 | cassandra.configBuilder.image.repository | string | `"datastax/cass-config-builder"` | Repository for cass-config-builder image |
 | cassandra.configBuilder.image.tag | string | `"1.0.4"` | Tag of the config builder image to pull from image repository |
 | cassandra.configBuilder.image.pullPolicy | string | `"IfNotPresent"` | Pull policy for the config builder image |
 | cassandra.jmxCredentialsConfig | object | `{"image":{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"busybox","tag":"1.33.1"},"securityContext":{}}` | The jmx-credentials init container that configures JMX credentials. |
-| cassandra.jmxCredentialsConfig.securityContext | object | `{}` | Security context override for jmx init container. |
+| cassandra.jmxCredentialsConfig.securityContext | object | `{}` | Security context override for jmx init container |
 | cassandra.jmxCredentialsConfig.image.registry | string | `"docker.io"` | Container registry for the jmx-credentials container |
 | cassandra.jmxCredentialsConfig.image.repository | string | `"busybox"` | Repository for jmx-credentials container image |
 | cassandra.jmxCredentialsConfig.image.tag | string | `"1.33.1"` | Tag of the jmx-credentials image to pull from image repository |
@@ -79,7 +79,10 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | cassandra.datacenters[0].racks | list | `[{"affinityLabels":{},"name":"default"}]` | The replication factor for keyspaces in the datacenter. Triggers the even token distribution algorithm for num_tokens and the replication factor. Note that this property is for Cassandra 4.0 and later. Setting this property with Cassandra 3.11.x will result in a chart validation error. When the Cassandra version is 4.0, this property is enabled by default with a value of 3. allocateTokensForLocalRF: 3 -- Specifies the racks for the data center, if unset the datacenter will be composed of a single rack named `default`. The number of racks should equal the replication factor of your application keyspaces. Cassandra will ensure that replicas are spread across racks versus having multiple replicas within the same rack. For example, let's say we are using RF = 3 with a 9 node cluster and 3 racks (and 3 nodes per rack). There will be one replica of the dataset spread across each rack. |
 | cassandra.datacenters[0].racks[0].name | string | `"default"` | Identifier for the rack, this may align with the labels used to control where resources are deployed for this rack. For example, if a rack is limited to a single availability zone the identifier may be the name of that AZ (eg us-east-1a). |
 | cassandra.datacenters[0].racks[0].affinityLabels | object | `{}` | an optional set of labels that are used to pin Cassandra pods to specific k8s worker nodes via affinity rules. See https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/ for background on using affinity rules. topology.kubernetes.io/zone is a well-known k8s label used by cloud providers to indicate the failure zone in which a k8s worker node is running. The following example illustrates how you can pin racks to specific failure zones. racks: - name: r1   affinityLabels:     topology.kubernetes.io/zone: us-east1-b - name: r2   affinityLabels:     topology.kubernetes.io/zone: us-east1-a - name: r3   affinityLabels:     topology.kubernetes.io/zone: us-east1-c |
-| cassandra.datacenters[0].heap | object | `{}` | Optional datacenter-level heap setting, overrides cluster-level setting `cassandra.heap`. Options are commented out for reference. Note that k8ssandra does not automatically apply default values for heap size. It instead defers to Cassandra's out of box defaults. |
+| cassandra.datacenters[0].fql | object | `{}` | Optionally enable full query logging facility for this DC. |
+| cassandra.datacenters[0].audit_logging | object | `{}` |  |
+| cassandra.datacenters[0].client_backpressure | object | `{}` |  |
+| cassandra.datacenters[0].heap | object | `{}` |  |
 | cassandra.datacenters[0].gc | object | `{"cms":{},"g1":{}}` | Optional datacenter-level garbage collection configuration. |
 | cassandra.datacenters[0].gc.cms | object | `{}` | Optional GC configuration for the CMS collector |
 | cassandra.datacenters[0].gc.g1 | object | `{}` | Controls the size of the two survivor spaces in the heap's young generation. survivorRatio: 8 -- The number of times an object survives a minor collection before being promoted to the old generation. maxTenuringThreshold: 1 -- A major collection starts if the occupancy of the old generation exceeds this percentage. initiatingOccupancyFraction: 75 -- The time in milliseconds that CMS threads wait for young GC. waitDuration: 10000 -- Optional GC configuration for the G1 collector |
@@ -88,8 +91,22 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | cassandra.ingress.method | string | `"traefik"` | Determines which TCP-based ingress custom resources to template out. Currently only `traefik` is supported |
 | cassandra.ingress.host | string | `nil` | Optional hostname used to match requests. Warning: many native Cassandra clients, notably including cqlsh, initialize their connection by querying for the cluster's contactPoints, and thereafter communicate to the cluster using those names/IPs rather than whatever host was specified to the client. In order for clients to work correctly through ingress with a host filter, this means that the host filter must match the hostnames specified in the contactPoints. This value must be a DNS-resolvable hostname and not an IP address. To avoid this issue, leave this setting blank. |
 | cassandra.ingress.traefik.entrypoint | string | `"cassandra"` | Traefik entrypoint where traffic is sourced. See https://doc.traefik.io/traefik/routing/entrypoints/ |
+| cassandra.metric_filters[0] | string | `"deny:org.apache.cassandra.metrics.Table"` |  |
+| cassandra.metric_filters[1] | string | `"deny:org.apache.cassandra.metrics.table"` |  |
+| cassandra.metric_filters[2] | string | `"allow:org.apache.cassandra.metrics.table.live_ss_table_count"` |  |
+| cassandra.metric_filters[3] | string | `"allow:org.apache.cassandra.metrics.Table.LiveSSTableCount"` |  |
+| cassandra.metric_filters[4] | string | `"allow:org.apache.cassandra.metrics.table.live_disk_space_used"` |  |
+| cassandra.metric_filters[5] | string | `"allow:org.apache.cassandra.metrics.table.LiveDiskSpaceUsed"` |  |
+| cassandra.metric_filters[6] | string | `"allow:org.apache.cassandra.metrics.Table.Pending"` |  |
+| cassandra.metric_filters[7] | string | `"allow:org.apache.cassandra.metrics.Table.Memtable"` |  |
+| cassandra.metric_filters[8] | string | `"allow:org.apache.cassandra.metrics.Table.Compaction"` |  |
+| cassandra.metric_filters[9] | string | `"allow:org.apache.cassandra.metrics.table.read"` |  |
+| cassandra.metric_filters[10] | string | `"allow:org.apache.cassandra.metrics.table.write"` |  |
+| cassandra.metric_filters[11] | string | `"allow:org.apache.cassandra.metrics.table.range"` |  |
+| cassandra.metric_filters[12] | string | `"allow:org.apache.cassandra.metrics.table.coordinator"` |  |
+| cassandra.metric_filters[13] | string | `"allow:org.apache.cassandra.metrics.table.dropped_mutations"` |  |
 | stargate.enabled | bool | `true` | Enable Stargate resources as part of this release |
-| stargate.version | string | `"1.0.35"` | version of Stargate to deploy. This is used in conjunction with cassandra.version to select the Stargate container image. If stargate.image is set, this value has no effect. |
+| stargate.version | string | `"1.0.40"` | version of Stargate to deploy. This is used in conjunction with cassandra.version to select the Stargate container image. If stargate.image is set, this value has no effect. |
 | stargate.image | object | `{}` | Sets the Stargate container image. This value must be compatible with the value provided for stargate.clusterVersion. If left blank (recommended), k8ssandra will derive an appropriate image based on cassandra.clusterVersion. |
 | stargate.replicas | int | `1` | Number of Stargate instances to deploy. This value may be scaled independently of Cassandra cluster nodes. Each instance handles API and coordination tasks for inbound queries. |
 | stargate.waitForCassandra | object | `{"image":{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"alpine","tag":"3.12.2"}}` | The wait-for-cassandra init container in the Stargate Deployment |
@@ -98,6 +115,7 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | stargate.waitForCassandra.image.tag | string | `"3.12.2"` | Tag of the image to pull from image.repository |
 | stargate.waitForCassandra.image.pullPolicy | string | `"IfNotPresent"` | Pull policy for the wait-for-cassandra container |
 | stargate.heapMB | int | `256` | The service account to use for Stargate pods. Defaults to the default account for the namespace. serviceAccount: -- Sets the heap size Stargate will use in megabytes. Memory request and limit for the pod will be set to this value x2 and x4, respectively. |
+| stargate.javaOpts | string | `nil` | A list options to pass to the JAVA_OPTS env var |
 | stargate.cpuReqMillicores | int | `200` | Sets the CPU request for the Stargate pod in millicores. |
 | stargate.cpuLimMillicores | int | `1000` | Sets the CPU limit for the Stargate pod in millicores. |
 | stargate.livenessInitialDelaySeconds | int | `30` | Sets the initial delay in seconds for the Stargate liveness probe. |
@@ -119,17 +137,17 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | stargate.ingress.cassandra.traefik.entrypoint | string | `"cassandra"` | Traefik entrypoint where traffic is sourced. See https://doc.traefik.io/traefik/routing/entrypoints/ |
 | stargate.affinity | object | `{}` | Affinity to apply to the Stargate pods. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity for background |
 | stargate.tolerations | list | `[]` | Tolerations to apply to the Stargate pods. See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for background. |
-| reaper.securityContext | object | `{}` | Security context override for reaper container.
-| reaper.schemaInitContainerConfig | object | `{}` | Security context override for reaper schema init container.
-| reaper.configInitContainerConfig | object | `{}` | Security context override for reaper config init container.
+| reaper.securityContext | object | `{}` | Security context override for reaper container |
+| reaper.schemaInitContainerConfig | object | `{"securityContext":{}}` | Security context override for reaper schema init container |
+| reaper.configInitContainerConfig | object | `{"securityContext":{}}` | Security context override for reaper config init container |
 | reaper.podSecurityContext | object | `{}` | Security context override for reaper pod |
 | reaper.autoschedule | bool | `false` | When enabled, Reaper automatically sets up repair schedules for all non-system keypsaces. Repear monitors the cluster so that as keyspaces are added or removed repair schedules will be added or removed respectively. |
 | reaper.autoschedule_properties | object | `{}` | Additional autoscheduling properties. Allows you to customize the schedule rules for autoscheduling. Properties are the same as accepted by the Reaper. |
 | reaper.enabled | bool | `true` | Enable Reaper resources as part of this release. Note that Reaper uses Cassandra's JMX APIs to perform repairs. When Reaper is enabled, Cassandra will also be configured to allow remote JMX access. JMX authentication will be configured in Cassandra with credentials only created for Reaper in order to limit access. |
-| reaper.image | object | `{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"thelastpickle/cassandra-reaper","tag":"2.3.1"}` | The name of the service account to use for Reaper pods. Defaults to the the default account. serviceAccount: Configures the Reaper container image to use. Exercise care when changing the Reaper image. Reaper is deployed and managed by reaper-operator. You will need to make sure that the image is compatible with reaper-operator. |
+| reaper.image | object | `{"pullPolicy":"IfNotPresent","registry":"docker.io","repository":"thelastpickle/cassandra-reaper","tag":"3.0.0"}` | The name of the service account to use for Reaper pods. Defaults to the the default account. serviceAccount: Configures the Reaper container image to use. Exercise care when changing the Reaper image. Reaper is deployed and managed by reaper-operator. You will need to make sure that the image is compatible with reaper-operator. |
 | reaper.image.registry | string | `"docker.io"` | Image registry for reaper |
 | reaper.image.repository | string | `"thelastpickle/cassandra-reaper"` | Image repository for reaper |
-| reaper.image.tag | string | `"2.3.1"` | Tag of the reaper image to pull from |
+| reaper.image.tag | string | `"3.0.0"` | Tag of the reaper image to pull from |
 | reaper.image.pullPolicy | string | `"IfNotPresent"` | Pull policy for the reaper container |
 | reaper.cassandraUser | object | `{"secret":"","username":""}` | Configures the Cassandra user used by Reaper when authentication is enabled. If neither cassandraUser.secret nor cassandraUser.username are set, then a Cassandra user and a secret with the user's credentials will be created. The username will be reaper. The secret name will be of the form {clusterName}-reaper. The password will be a random 20 character password. If cassandraUser.secret is set, then the Cassandra user will be created from the contents of the secret. If cassandraUser.secret is not set and if cassandraUser.username is set, a secret will be generated using the specified username. The password will be generated as previously described. |
 | reaper.jmx | object | `{"secret":"","username":""}` | Configures JMX access to the Cassandra cluster. Reaper requires remote JMX access to perform repairs. The Cassandra cluster will be configured with remote JMX access enabled when Reaper is deployed. The JMX access will be configured to use authentication. If neither `jmx.secret` nor `jmx.username` are set, then a default user and secret with the user's credentials will be created. |
@@ -141,8 +159,8 @@ Provisions and configures an instance of the entire K8ssandra stack. This includ
 | reaper.affinity | object | `{}` | Affinity to apply to the Reaper pods. See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity for background |
 | reaper.tolerations | list | `[]` | Tolerations to apply to the Reaper pods. See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for background. |
 | medusa.enabled | bool | `false` | Enable Medusa resources as part of this release. If enabled, `bucketName` and `storageSecret` **must** be defined. |
-| medusa.securityContext | object | `{}` | Security context override for Medusa container.
-| medusa.restoreInitContainerConfig | object | `{}` | Security context override for Medusa restore init container.
+| medusa.securityContext | object | `{}` | Security context override for Medusa container. |
+| medusa.restoreInitContainerConfig | object | `{"securityContext":{}}` | Security context override for Medusa config init container. |
 | medusa.image.registry | string | `"docker.io"` | Image registry for medusa |
 | medusa.image.repository | string | `"k8ssandra/medusa"` | Image repository for medusa |
 | medusa.image.tag | string | `"0.11.1"` | Tag of the medusa image to pull from |
