@@ -123,7 +123,7 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(initContainers[2].Name).To(Equal(JmxCredentialsInitContainer))
 			// Verify LOCAL_JMX value
 			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers)).To(Equal(1))
-			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env)).To(Equal(1))
+			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env)).To(Equal(2))
 			Expect(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env[0].Name).To(Equal("LOCAL_JMX"))
 			Expect(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env[0].Value).To(Equal("no"))
 			Expect(cassdc.Spec.AllowMultipleNodesPerWorker).To(Equal(false))
@@ -147,21 +147,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(kubeapi.GetVolumeNames(cassdc.Spec.PodTemplateSpec)).To(ConsistOf(CassandraConfigVolumeName,
 				CassandraMetricsCollConfigVolumeName, CassandraTmpVolumeName, ReaperConfigVolumeName))
 
-			// Default security context for containers
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
-
-			AssertContainerSecurityContextNotExists(cassdc, MedusaContainer, MedusaInitContainer)
-
-			// TODO - this will change once mgmt-api root access needs are addressed.
-			isReadOnlyRootFilesystemAllowed := false
-			expectedCtx := corev1.SecurityContext{ReadOnlyRootFilesystem: &isReadOnlyRootFilesystemAllowed}
-			AssertContainerSecurityContextExistsAndMatches(cassdc, CassandraContainer, expectedCtx)
-
-			// Default pod security context for cassdc
-			// TODO - revisit as this was potentially causing issues by defaulting to {}
-			// with respect to running in GKE - see k8ssandra #1094
-			Expect(cassdc.Spec.PodTemplateSpec.Spec.SecurityContext).To(BeNil())
 		})
 
 		It("is not rendered if disabled", func() {
@@ -184,7 +169,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			}
 
 			Expect(renderTemplate(options)).To(Succeed())
-
 			Expect(cassdc.Spec.ClusterName).To(Equal(clusterName))
 		})
 
@@ -345,21 +329,11 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(cassdc.Annotations).ShouldNot(HaveKeyWithValue(ReaperInstanceAnnotation, reaperInstanceValue))
 
 			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers)).To(Equal(1))
-			// No env slice should be present
-			Expect(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env).To(BeNil())
+			// The metrics filter env should be set
+			Expect(Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers[0].Env)).To(Equal(1)))
 
 			AssertInitContainerNamesMatch(cassdc, BaseConfigInitContainer, ConfigInitContainer,
 				JmxCredentialsInitContainer)
-
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
-
-			// TODO - this will change once mgmt-api root access needs are addressed.
-			isReadOnlyRootFilesystemAllowed := false
-			expectedCtx := corev1.SecurityContext{ReadOnlyRootFilesystem: &isReadOnlyRootFilesystemAllowed}
-			AssertContainerSecurityContextExistsAndMatches(cassdc, CassandraContainer, expectedCtx)
-
-			AssertContainerSecurityContextNotExists(cassdc, MedusaContainer, MedusaInitContainer)
 
 			// No users should exist
 			Expect(cassdc.Spec.Users).To(BeNil())
@@ -380,8 +354,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(renderTemplate(options)).To(Succeed())
 
 			AssertInitContainerNamesMatch(cassdc, BaseConfigInitContainer, ConfigInitContainer, JmxCredentialsInitContainer, MedusaInitContainer)
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
 
 			// Two containers, medusa and cassandra
 			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers)).To(Equal(2))
@@ -399,14 +371,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 				storageSecret, PodInfoVolumeName))
 
 			Expect(medusaRestoreInitContainer).ToNot(BeNil())
-			Expect(medusaRestoreInitContainer.SecurityContext).ToNot(BeNil())
-
-			// TODO - this will change once medusa root access needs are addressed.
-			Expect(*medusaRestoreInitContainer.SecurityContext.ReadOnlyRootFilesystem).To(BeFalse())
-
-			Expect(medusaContainer.SecurityContext).ToNot(BeNil())
-			// TODO - this will change once medusa root access needs are addressed.
-			Expect(*medusaContainer.SecurityContext.ReadOnlyRootFilesystem).To(BeFalse())
 
 		})
 
@@ -426,14 +390,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 
 			AssertInitContainerNamesMatch(cassdc, BaseConfigInitContainer, ConfigInitContainer,
 				JmxCredentialsInitContainer, MedusaInitContainer)
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
-
-			// TODO - this will change once medusa root access needs are addressed.
-			isReadOnlyRootFilesystemAllowed := false
-			expectedCtx := corev1.SecurityContext{ReadOnlyRootFilesystem: &isReadOnlyRootFilesystemAllowed}
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaInitContainer, expectedCtx)
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaContainer, expectedCtx)
 
 			// Two containers, medusa and cassandra
 			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers)).To(Equal(2))
@@ -477,16 +433,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 
 			AssertInitContainerNamesMatch(cassdc, BaseConfigInitContainer, ConfigInitContainer,
 				JmxCredentialsInitContainer, MedusaInitContainer)
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
-
-			// TODO - this will change once mgmt-api root access needs are addressed.
-			isReadOnlyRootFilesystemAllowed := false
-			expectedCtx := corev1.SecurityContext{ReadOnlyRootFilesystem: &isReadOnlyRootFilesystemAllowed}
-			AssertContainerSecurityContextExistsAndMatches(cassdc, CassandraContainer, expectedCtx)
-			// TODO - this will change once medusa root access needs are addressed.
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaInitContainer, expectedCtx)
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaContainer, expectedCtx)
 
 			// Two containers, medusa and cassandra
 			Expect(len(cassdc.Spec.PodTemplateSpec.Spec.Containers)).To(Equal(2))
@@ -526,18 +472,6 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 				JmxCredentialsInitContainer, MedusaInitContainer)
 
 			AssertContainerNamesMatch(cassdc, CassandraContainer, MedusaContainer)
-
-			AssertContainerSecurityContextExists(cassdc, BaseConfigInitContainer, ConfigInitContainer,
-				JmxCredentialsInitContainer)
-
-			// TODO - this will change once mgmt-api root access needs are addressed.
-			isReadOnlyRootFilesystemAllowed := false
-			expectedCtx := corev1.SecurityContext{ReadOnlyRootFilesystem: &isReadOnlyRootFilesystemAllowed}
-			AssertContainerSecurityContextExistsAndMatches(cassdc, CassandraContainer, expectedCtx)
-
-			// TODO - this will change once medusa root access needs are addressed.
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaContainer, expectedCtx)
-			AssertContainerSecurityContextExistsAndMatches(cassdc, MedusaInitContainer, expectedCtx)
 
 		})
 
@@ -1138,7 +1072,7 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(config.CassandraConfig.PermissionsUpdateMillis).To(Equal(cacheUpdateInterval))
 			Expect(config.CassandraConfig.CredentialsValidityMillis).To(Equal(cacheValidityPeriod))
 			Expect(config.CassandraConfig.CredentialsUpdateMillis).To(Equal(cacheUpdateInterval))
-			Expect(config.JvmServerOptions.AdditionalJvmOptions).To(ConsistOf(
+			Expect(config.JvmServerOptions.AdditionalJvmOptions).To(ContainElements(
 				"-Dcassandra.system_distributed_replication_dc_names="+dcName,
 				"-Dcassandra.system_distributed_replication_per_dc="+strconv.Itoa(clusterSize),
 			))
@@ -1444,13 +1378,13 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 
 	Context("when configuring the Cassandra version and/or image", func() {
 		cassandraVersionImageMap := map[string]string{
-			"3.11.7":  "k8ssandra/cass-management-api:3.11.7-v0.1.29",
-			"3.11.8":  "k8ssandra/cass-management-api:3.11.8-v0.1.29",
+			"3.11.7":  "k8ssandra/cass-management-api:3.11.7-v0.1.32",
+			"3.11.8":  "k8ssandra/cass-management-api:3.11.8-v0.1.32",
 			"3.11.9":  "k8ssandra/cass-management-api:3.11.9-v0.1.27",
 			"3.11.10": "k8ssandra/cass-management-api:3.11.10-v0.1.27",
-			"3.11.11": "k8ssandra/cass-management-api:3.11.11-v0.1.29",
-			"4.0.0":   "k8ssandra/cass-management-api:4.0.0-v0.1.29",
-			"4.0.1":   "k8ssandra/cass-management-api:4.0.1-v0.1.29",
+			"3.11.11": "k8ssandra/cass-management-api:3.11.11-v0.1.32",
+			"4.0.0":   "k8ssandra/cass-management-api:4.0.0-v0.1.32",
+			"4.0.1":   "k8ssandra/cass-management-api:4.0.1-v0.1.32",
 		}
 
 		It("using the default version", func() {
@@ -1461,7 +1395,7 @@ var _ = Describe("Verify CassandraDatacenter template", func() {
 			Expect(renderTemplate(options)).To(Succeed())
 
 			Expect(cassdc.Spec.ServerVersion).To(Equal("4.0.1"))
-			Expect(cassdc.Spec.ServerImage).To(Equal("k8ssandra/cass-management-api:4.0.1-v0.1.29"))
+			Expect(cassdc.Spec.ServerImage).To(Equal("k8ssandra/cass-management-api:4.0.1-v0.1.32"))
 		})
 
 		It("using 3.11.7", func() {

@@ -16,7 +16,14 @@ last).
 When cutting a new release of the parent `k8ssandra` chart update the `unreleased` heading to the tag being generated 
 and date `## vX.Y.Z - YYYY-MM-DD` and create a new placeholder section for  `unreleased` entries.
 
-## unreleased
+## v1.3.3 - 2021-10-18
+
+* [BUGFIX] Re-introduce table level metrics that were mistakenly removed in 1.3.2
+
+## v1.3.2 - 2021-10-14
+
+* [BUGFIX] Allow usage of Traefik charts above 10.0.0
+* [BUGFIX] #969 Prometheus "out-of-order timestamp" error due to metrics relabeling conflict 
 
 ## v1.3.1 - 2021-08-27
 
